@@ -15,10 +15,10 @@ export const api = createApi({
     },
   }),
   reducerPath: "api",
-  tagTypes: [],
-  endpoints: (build) => ({
-    getAuthUser: build.query<User, void>({
-      queryFn: async (_, _queryApi, _extraoptions, fetchWithBQ) => {
+  tagTypes: ["Managers", "Tenants"],
+  endpoints: (builder) => ({
+    getAuthUser: builder.query<User, void>({
+      queryFn: async (_, _queryApi, _extraOptions, fetchWithBaseQuery) => {
         try {
           const session = await fetchAuthSession();
           const { idToken } = session.tokens ?? {};
@@ -30,9 +30,8 @@ export const api = createApi({
               ? `/managers/${user.userId}`
               : `/tenants/${user.userId}`;
 
-          let userDetailsResponse = await fetchWithBQ(endpoint);
+          let userDetailsResponse = await fetchWithBaseQuery(endpoint);
 
-          // if user not exist -> create
           if (
             userDetailsResponse.error &&
             userDetailsResponse.error.status === 404
@@ -41,7 +40,7 @@ export const api = createApi({
               user,
               idToken,
               userRole,
-              fetchWithBQ
+              fetchWithBaseQuery
             );
           }
 
@@ -57,7 +56,45 @@ export const api = createApi({
         }
       },
     }),
+
+    updateTenantSettings: builder.mutation<
+      Tenant,
+      { cognitoId: string } & Partial<Tenant>
+    >({
+      query: ({ cognitoId, ...updatedTenant }) => ({
+        url: `tenants/${cognitoId}`,
+        method: "PUT",
+        body: updatedTenant,
+      }),
+      invalidatesTags: (result) => [
+        {
+          type: "Tenants",
+          id: result?.id,
+        },
+      ],
+    }),
+
+    updateManagerSettings: builder.mutation<
+      Manager,
+      { cognitoId: string } & Partial<Manager>
+    >({
+      query: ({ cognitoId, ...updatedManager }) => ({
+        url: `managers/${cognitoId}`,
+        method: "PUT",
+        body: updatedManager,
+      }),
+      invalidatesTags: (result) => [
+        {
+          type: "Managers",
+          id: result?.id,
+        },
+      ],
+    }),
   }),
 });
 
-export const { useGetAuthUserQuery } = api;
+export const {
+  useGetAuthUserQuery,
+  useUpdateTenantSettingsMutation,
+  useUpdateManagerSettingsMutation,
+} = api;

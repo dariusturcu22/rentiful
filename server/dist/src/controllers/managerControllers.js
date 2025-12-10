@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createManager = exports.getManager = void 0;
+exports.updateManager = exports.createManager = exports.getManager = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 const getManager = async (req, res) => {
@@ -46,4 +46,25 @@ const createManager = async (req, res) => {
     }
 };
 exports.createManager = createManager;
+const updateManager = async (req, res) => {
+    try {
+        const { cognitoId } = req.params;
+        const { name, email, phoneNumber } = req.body;
+        if (!cognitoId) {
+            res.status(400).json({ message: "Missing cognitoId parameter" });
+            return;
+        }
+        const updatedManager = await prisma.manager.update({
+            where: { cognitoId },
+            data: { name, email, phoneNumber },
+        });
+        res.status(200).json(updatedManager);
+    }
+    catch (error) {
+        res
+            .status(500)
+            .json({ message: `Error updating manager: ${error.message}` });
+    }
+};
+exports.updateManager = updateManager;
 //# sourceMappingURL=managerControllers.js.map
